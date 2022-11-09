@@ -1,0 +1,2390 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: 'CI: Risk - Buyer Data Service API v1'
+  description: |-
+    This API is based on the **Buyer CBO** and provides the operations around buyer information related to an **Organisation** with the role *BUYR* (Buyer) such as **Ownership**, **Suppression Date**, **Notes**, **Tags**
+    
+    Please note that the API request structure will be validated like mandatory fields, if a number is a number, etc.
+
+    ### Effective dates Reference
+    
+    The operations makes usage of *Effective* dates for retrieving information in a specific **Period of Time** as following
+
+    <table>
+      <tr>
+        <th>Effect From</th>
+        <th>Effect To</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>NULL</td>
+        <td>Only the current active record will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>NULL</td>
+        <td>All the records from the <b>effect_from_date</b> until <b>current date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>DATE</td>
+        <td>All the historic records until <b>effect_to_date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>DATE</td>
+        <td>Returns all the records from the <b>effect_from_date</b> and the <b>effect_to_date</b> given</td>
+      </tr>
+    </table>
+    
+    ### Buyer reference data domains
+    <table>
+      <tr>
+        <th>Domain Name</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>AUTO_STRATEGY_NOT_ALLOWED_REASON</td>
+        <td>Auto strategy not allowed reason codes</td>
+      </tr>
+      <tr>
+        <td>BUYER_NOTE_CONFIDENTIALITY_LEVEL</td>
+        <td>Buyer note confidentiality level identifiers</td>
+      </tr>
+      <tr>
+        <td>BUYER_NOTE_TAG_ID</td>
+        <td>Buyer note tag identifiers</td>
+      </tr>
+      <tr>
+        <td>BUYER_TAG_ID</td>
+        <td>Buyer tag identifiers</td>
+      </tr>
+      <tr>
+        <td>BUYER_OWNER_TYP_FLAG</td>
+        <td>Used to indicate if the buyer in question is owned by a group or by an individual</td>
+      </tr>
+      <tr>
+        <td>RISK_REGULATOR_INDICATOR</td>
+        <td>Risk regulator indicators</td>
+      </tr>
+      <tr>
+        <td>STRATEGY_CLASS</td>
+        <td>Strategy class codes</td>
+      </tr>
+      <tr>
+        <td>STRATEGY_CLASS_REASON</td>
+        <td>Strategy class reason codes</td>
+      </tr>
+      <tr>
+        <td>YES_NO_FLAG</td>
+        <td>A simple list of values used to indicate if the database fields in question are storing 'yes' or 'no'</td>
+      </tr>
+      <tr>
+        <td>SYSTEM_LINK_TYPE</td>
+        <td>Returns the possible link types of a system link associated to a buyer</td>
+      </tr>
+    </table>
+
+    ### API Owner
+    
+    **Name**: Cesar Herrera Garcia (temporary) <br>
+    **Email**: cesar.herreragarcia@atradius.com
+    
+    ### Product Owner
+    
+    **Name:** Cesar Herrera Garcia (temporary) <br>
+    **Email:** cesar.herreragarcia@atradius.com
+host: _apigw-host_
+basePath: /risk/buyers/v1
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+parameters:
+  # Path
+  BuyerIdPath:
+    name: buyer_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: 'Buyer identifier'
+  BuyerTagIdPath:
+    name: buyer_tag_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: 'Tag reference identifier'
+  DomainNamePath:
+    name: domain_name
+    in: path
+    required: true
+    type: string
+    description: 'Domain name of the buyer reference data'
+    maxLength: 100
+  NoteIdPath:
+    name: note_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: "Note identifier"
+  SystemLinkIdPath:
+    name: system_link_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: "System link identifier"
+  AUPCalculationSnapshotIdPath:
+    name: aup_calculation_snapshot_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: 'AUP Snapshot identifier'
+  # Param
+  CountryCodeParam:
+    name: country_iso_3_code
+    in: query
+    required: false
+    type: string
+    description: "Country ISO 3166 - alpha3 code"
+  OffsetParam:
+    in: query
+    name: offset
+    required: false
+    type: integer
+    format: int32
+    minimum: 0
+    description: 'The number of items to skip before starting to collect the result set.'
+  LimitParam:
+    in: query
+    name: limit
+    required: false
+    type: integer
+    format: int32
+    minimum: 1
+    maximum: 200
+    description: 'The numbers of items to return.'
+  LanguageParam:
+    name: language_code
+    in: query
+    required: false
+    type: string
+    description: 'The language in which data may be returned'
+    default: 'EN'
+  EffectFromDateParam:
+    name: effect_from_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effective from data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+  EffectToDateParam:
+    name: effect_to_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effective to data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+  # Headers
+  AtradiusApiKey:
+    name: CibtW2-App-Key
+    in: header
+    required: true
+    type: string
+    description: 'Key Validation Policies'
+  AtradiusOriginUserIdHeader:
+    name: Atradius-Origin-User-Id
+    in: header
+    required: true
+    type: string
+    description: 'Name of the user who is performing an action in a system (Note this is normally the login ID coming from the LDAP'
+  AtradiusOriginApplicationHeader:
+    name: Atradius-Origin-Application
+    in: header
+    required: true
+    type: string
+    description: 'Identification of the application which invoked the service'
+  AtradiusOriginServiceHeader:
+    name: Atradius-Origin-Service
+    in: header
+    required: true
+    type: string
+    description: 'The name of origin (parent) service which is invoked'
+  AtradiusInvocationServiceHeader:
+    name: Atradius-Invocation-Service
+    in: header
+    required: true
+    type: string
+    description: 'The invocation service URL'
+  AtradiusMessageTimestampHeader:
+    name: Atradius-Message-Timestamp
+    in: header
+    required: true
+    type: string
+    description: 'The timestamp when the client is invoked the origin service'
+  AtradiusMessageIdHeader:
+    name: Atradius-Message-Id
+    in: header
+    required: false
+    type: string
+    format: uuid
+    description: 'Unique identifier of the message that has been send'
+  AtradiusCorrelationIdHeader:
+    name: Atradius-Correlation-Id
+    in: header
+    required: false
+    type: string
+    format: uuid
+    description: 'Unique identifier of a transaction over various applications / components'
+  AtradiusConcurrencyControlVersionHeader:
+    name: Atradius-Concurrency-Control-Version
+    in: header
+    required: false
+    type: string
+    description: 'A placeholder were we can store a string with relevant information to perform in the data store the verification of the optimistic concurrency control. Block to capture the information which might be required as part of the Optimistic concurrency control (OCC) which is a concurrency control method applied to transactional systems.'
+paths:
+  /buyers:
+    x-summary: Create Buyer Details
+    post:
+      security:
+        - Bearer: []
+      tags:
+        - Details
+      description: 'This operation creates a buyer association to an existing organisation and populates buyer details information'
+      summary: Create Buyer Details
+      operationId: CreateBuyerDetails
+      parameters:
+        # Path
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/CreateBuyerDetails'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerDetails'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json:
+              {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.CreateBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json:
+              {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.CreateBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '422':
+          description: 'Unprocessable Entity'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json:
+              {"severity": "WARNING", "type": "BuyerTechnicalException", "code": "BU_DS_0030", "message": "The buyer details for the organisation already exists", "source": "BuyerDS.CreateBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0031", "message": "The buyer details for the organisation {buyer_id} cannot be created due to a technical error", "source": "BuyerDS.CreateBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}:
+    x-summary: Get Buyer Details
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Details
+      description: 'This operation retrieves all the buyer details excepting the underwriting settings / strategy'
+      summary: Get Buyer Details
+      operationId: GetBuyerDetails
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:d', 'create_uid:a', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyers'
+          schema:
+            $ref: '#/definitions/BuyerDetailsPaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to input validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json:
+              {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json:
+              {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0032", "message": "System cannot retrieve buyer details data due to a technical error", "source": "BuyerDS.GetBuyerDetails", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}/owner:
+    x-summary: Get, Update Buyer Owner
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Ownership
+      description: 'This operation retrieves the owners of a buyer for a given period'
+      summary: Get Buyer Owner
+      operationId: GetBuyerOwner
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['owner_id:a', 'owner_id:d', 'owner_type:a', 'owner_type:d', 'owner_id_modified_date:a', 'owner_id_modified_date:d', 'owner_id_modified_user:a', 'owner_id_modified_user:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerOwnerPaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to input validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerDSTechnicalException", "code": "BU_DS_0007", "message": "The buyer owner cannot be retrieved due to a technical error", "source": "BuyerDS.GetBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    patch:
+      security:
+        - Bearer: []
+      tags:
+        - Ownership
+      description: 'This operation updates the Buyer Owner and raises an event to inform about it'
+      summary: Update Buyer Owner
+      operationId: UpdateBuyerOwner
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerOwner'
+      responses:
+        '204':
+          description: ''
+          headers: {}
+        '400':
+          description: 'Request failed due to input validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.UpdateBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.UpdateBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '409':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericConcurrencyException", "code": "GE_DS_0007", "message": "The request has failed due to concurrency control", "source": "BuyerDS.UpdateBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0008", "message": "The buyer owner cannot be updated due to a technical error", "source": "BuyerDS.UpdateBuyerOwner", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}/suppression-date:
+    x-summary: Get, Update Buyer Suppression Date
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Suppression date
+      description: 'This operation retrieves the suppression dates of a buyer for a given period'
+      summary: Get Buyer Suppression Date
+      operationId: GetBuyerSuppressionDate
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['suppression_date:a', 'suppression_date:d','suppression_date_modified_date:a', 'suppression_date_modified_date:d', 'suppression_date_modified_user:a', 'suppression_date_modified_user:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerSuppressionDatePaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to input validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0031", "message": "The buyer suppression date cannot be obtained due to a technical issue", "source": "BuyerDS.GetBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    patch:
+      security:
+        - Bearer: []
+      tags:
+        - Suppression date
+      description: 'This operation updates the suppression date of a buyer. An authorisation check is done in user level to be able or not to perform this update'
+      summary: Update Buyer Suppression Date
+      operationId: UpdateBuyerSuppressionDate
+      produces:
+        - application/json
+      consumes:
+        - application/json
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerSuppressionDate'
+      responses:
+        '204':
+          description: ''
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.UpdateBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.UpdateBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '409':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericConcurrencyException", "code": "GE_DS_0007", "message": "The request has failed due to concurrency control", "source": "BuyerDS.UpdateBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0010", "message": "The suppression date for the buyer could not be updated due to a technical issue", "source": "BuyerDS.UpdateBuyerSuppressionDate", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}/short-note:
+    x-summary: Get and Update Short Note
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Short note
+      description: 'Get the short notes of a buyer for a given period'
+      summary: Get Buyer Short Note
+      operationId: GetBuyerShortNote
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['short_note:a', 'short_note:d', 'short_note_modified_date:a', 'short_note_modified_date:d', 'short_note_modified_user:a', 'short_note_modified_user:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerShortNotePaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0014", "message": "The short note for the buyer could not be retrieved due to ta technical issue", "source": "BuyerDS.GetBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    patch:
+      security:
+        - Bearer: []
+      tags:
+        - Short note
+      description: 'This operation updates the short note'
+      summary: Update the Buyer Short Note
+      operationId: UpdateBuyerShortNote
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerShortNote'
+      responses:
+        '204':
+          description: ''
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.UpdateBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.UpdateBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '409':
+          description: 'Concurrency control error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericConcurrencyException", "code": "GE_DS_0007", "message": "The request has failed due to concurrency control", "source": "BuyerDS.UpdateBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0015", "message": "The buyer note could not be updated due to a technical issue", "source": "BuyerDS.UpdateBuyerShortNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}/tags:
+    x-summary: Add / Get / Replace Tags
+    get:
+      tags:
+        - Tags
+      security:
+        - Bearer: []
+      description: 'This operation get the tags linked to a specific buyer by its given organisation identifier'
+      summary: Get Buyer Tags
+      operationId: GetBuyerTags
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['buyer_tag_id:a', 'buyer_tag_id:d', 'buyer_tag_description:a', 'buyer_tag_description:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer tags'
+          schema:
+            $ref: '#/definitions/BuyerTagPaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerTags", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerTags", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0001", "message": "The tags for the buyer {buyer_id} could not be retrieved due to a technical issue with the database", "source": "BuyerDS.GetBuyerTags", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    put:
+      tags:
+        - Tags
+      security:
+        - Bearer: []
+      description: 'This operation replaces a Tag by another Tag in a given Buyer'
+      summary: Replace Buyer Tag
+      operationId: ReplaceBuyerTag
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerTagReplace'
+      responses:
+        '200':
+          description: 'Tag replaced successfully'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.ReplaceBuyerTag", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.ReplaceBuyerTag", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0031", "message": "The tag {tag_id_source} could not be replaced by {tag_id_target} in the buyer {buyer_id} due to a technical error in the database", "source": "BuyerDS.ReplaceBuyerTag", "target": [{"key": "buyer_id","value": 12345667},{"key": "tag_id_source","value": 1}, {"key": "tag_id_target","value": 2}]}
+          headers: {}
+  /buyers/{buyer_id}/tags/{buyer_tag_id}:
+    x-summary: Add / Remove Tag from a Buyer
+    post:
+      tags:
+        - Tags
+      security:
+        - Bearer: []
+      description: 'This operation associates a Tag to a Buyer'
+      summary: Add Buyer Tag
+      operationId: AddBuyerTag
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/BuyerTagIdPath'
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '201':
+          description: 'Tag associated to the buyer successfully'
+          schema:
+            $ref: '#/definitions/BuyerTag'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.AddBuyerTag", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.AddBuyerTag", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0002", "message": "The tag {tag_id} could not be added to the buyer {buyer_id} due to a technical error in the database", "source": "BuyerDS.AddBuyerTag", "target": [{"key": "buyer_id","value": 12345667},{"key": "tag_id","value": 5667}]}
+          headers: {}
+    delete:
+      tags:
+        - Tags
+      security:
+        - Bearer: []
+      description: 'This operation dissasociate a Tag from a Buyer'
+      summary: Remove Buyer Tag
+      operationId: RemoveBuyerTag
+      parameters:
+        # Path
+        # Param
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/BuyerTagIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '204':
+          description: 'Buyer Tag dissasociated succesfuly'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.RemoveBuyerTag", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.RemoveBuyerTag", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0003", "message": "The tag {tag_id} could not be removed from the buyer {org_id} due to a technical error in the database", "source": "BuyerDS.RemoveBuyerTag", "target": [{"key": "buyer_id","value": 12345667}, {"key": "tag_id","value": 566}]}
+          headers: {}
+  /buyers/reference/{domain_name}:
+    x-summary: Get and Create
+    get:
+      tags:
+        - Reference data
+      security:
+        - Bearer: []
+      description: 'This operation retrieves buyer reference data for a given `domain_name`'
+      summary: Get Buyer Reference Data
+      operationId: GetBuyerReferenceData
+      parameters:
+        # Path
+        - $ref: '#/parameters/DomainNamePath'
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['code_value1:a', 'code_value1:d', 'code_value2:a', 'cod_value2:d', 'code_value3:a', 'code_value3:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['code_value1:a']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerReferenceData'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerReferenceData", "target": [{"key": "val1","value": "BYR"}, {"key": "val2","value": "BUYCTRY"}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerReferenceData", "target": [{"key": "val1","value": "BYR"}, {"key": "val2","value": "BUYCTRY"}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0029", "message": "The buyer reference data for the domain name given cannot be retrieved due to a technical error", "source": "BuyerDS.GetBuyerReferenceData", "target": [{"key": "val1","value": "BYR"}, {"key": "val2","value": "BUYCTRY"}]}
+          headers: {}
+
+  /buyers/{buyer_id}/notes:
+    x-summary: Get / Create Buyer Notes
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Notes
+      description: 'This operation is used to retrieve the buyer notes. <br> The operation will filter the notes based on the `confidential_level` you are allowed to see'
+      summary: Get Buyer Notes
+      operationId: GetBuyerNotes
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - name: main_flag
+          in: query
+          required: false
+          description: 'Optionally filter if you want only notes created directly in this buyer (Y) or linked to this buyer from another (N)'
+          type: string
+          enum: ['Y', 'N']
+        - name: contact_individual_id
+          in: query
+          required: false
+          description: 'Optionally filter by the individual id of the associated contact '
+          type: integer
+          format: int64
+        - name: contact_type
+          in: query
+          required: false
+          description: 'Optionally filter by the type of the contact.'
+          type: string
+          maxLength: 4
+        - name: create_uid
+          in: query
+          required: false
+          description: 'User who created the note'
+          type: string
+        - name: last_update_date
+          in: query
+          required: false
+          description: 'Date when the note was last updated'
+          type: string
+          format: date
+        - name: tags_id
+          in: query
+          required: false
+          description: 'Buyer note tags identifier to filter on.'
+          type: array
+          items:
+            type: integer
+            format: int32
+          minItems: 0
+          maxItems: 3
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['contact_type:a', 'contact_type:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerNotePaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerNotes", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerNotes", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0038", "message": "The buyer notes cannot be retrieved due to a technical error", "source": "BuyerDS.GetBuyerNotes", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    post:
+      tags:
+        - Notes
+      security:
+        - Bearer: []
+      description: 'This operation creates a note for the given buyer. <br> If the user is not allowed for the `confidentiality_level` provided, then the operation will fail'
+      summary: Create Buyer Note
+      operationId: CreateBuyerNote
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/Note'
+      responses:
+        '201':
+          description: 'Note created successfully'
+          schema:
+            $ref: '#/definitions/Note'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.CreateBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "BuyerUserUnauthorisedException", "code": "BU_DS_0039", "message": "The user cannot create, update or delete buyer notes for this confidentiality level because has not rights for it", "source": "BuyerDS.CreateBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0040", "message": "The buyer note could not be created due to a technical issue", "source": "BuyerDS.CreateBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}/notes/{note_id}:
+    x-summary: Get / Update / Delete Buyer Note
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Notes
+      description: 'This operation is used to retrieve a single buyer note information. <br> The operation will fail if you do not have enough rights for its `confidential_level`'
+      summary: Get Buyer Note
+      operationId: GetBuyerNote
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/NoteIdPath'
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/BuyerNote'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "BuyerUserUnauthorisedException", "code": "BU_DS_0039", "message": "The user cannot create, update or delete buyer notes for this confidentiality level because has not rights for it", "source": "BuyerDS.GetBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0044", "message": "The buyer note could not be retrieved due to a technical issue", "source": "BuyerDS.GetBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    put:
+      tags:
+        - Notes
+      security:
+        - Bearer: []
+      description: 'This operation updates a note. <br> **Important**: the `main_flag` value sent is ignored during this update. <br>If the user is not allowed to see the current note for the `confidentiality_level` then can not change the note details'
+      summary: Update Buyer Note
+      operationId: UpdateBuyerNote
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/NoteIdPath'
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/Note'
+      responses:
+        '201':
+          description: 'Note created successfully'
+          schema:
+            $ref: '#/definitions/Note'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.UpdateBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "BuyerUserUnauthorisedException", "code": "BU_DS_0039", "message": "The user cannot create, update or delete buyer notes for this confidentiality level because has not rights for it", "source": "BuyerDS.UpdateBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0041", "message": "The buyer note could not be updated due to a technical issue", "source": "BuyerDS.UpdateBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+    delete:
+      tags:
+        - Notes
+      security:
+        - Bearer: []
+      description: 'This operation deletes a note. <br> If the note to be deleted has the `main_flag=Y` then it deletes the note and the related links to it from other buyers. Otherwise, it only deletes the link from the current buyer. <br> If the `confidentiality_level` is not allowed for the current user then cannot delete the note'
+      summary: Delete Buyer Note
+      operationId: DeleteBuyerNote
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/NoteIdPath'
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      # Body
+      responses:
+        '204':
+          description: 'Note deleted successfully'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.DeleteBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "BuyerUserUnauthorisedException", "code": "BU_DS_0039", "message": "The user cannot create, update or delete buyer notes for this confidentiality level because has not rights for it", "source": "BuyerDS.DeleteBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0042", "message": "The buyer note could not be deleted due to a technical issue", "source": "BuyerDS.DeleteBuyerNote", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+
+  /buyers/system-links:
+    x-summary: Get / Create System Links
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Links
+      description: 'This operation retrieves all the reference data system links available for any country for a given period of time. If `country_code` (ISO-3166) is provided then links without any country restriction in combination with links where the country_code is present will be returned'
+      summary: Get Buyer System Links
+      operationId: GetBuyerSystemLinks
+      parameters:
+        # Path
+        # Param
+        - $ref: '#/parameters/CountryCodeParam'
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['system_name:a','system_name:d', 'system_code:a', 'system_code:d', 'id:a', 'id:d', 'effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['system_name:a']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/SystemLink'
+          headers: {}
+        '400':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerSystemLinks", "target": [{"key": "buyer_id","value": 12345667}, {"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerSystemLinks", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0051", "message": "The system links for the country {country_id} could not be retrieved due to a technical issue", "source": "BuyerDS.GetBuyerSystemLinks", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+    post:
+      tags:
+        - Links
+      security:
+        - Bearer: []
+      description: 'This operation creates a system link with an optionally list of countries to be restricted to'
+      summary: Create Buyer System Link
+      operationId: CreateBuyerSystemLink
+      parameters:
+        # Path
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/SystemLink'
+      responses:
+        '201':
+          description: 'System link created succesfully'
+          schema:
+            $ref: '#/definitions/SystemLink'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.CreateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.CreateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '422':
+          description: 'There is an existing link with the same system_code provided'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "BuyerTechnicalException", "code": "BU_DS_0059", "message": "There is a system_link with system code {system_code} already active for this buyer {buyer_id}", "source": "BuyerDS.CreateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0053", "message": "The buyer details for the buyer {buyer_id} cannot be created due to a technical error", "source": "BuyerDS.CreateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+  /buyers/system-links/{system_link_id}:
+    x-summary: Update / Delete System Link
+    put:
+      tags:
+        - Links
+      security:
+        - Bearer: []
+      description: 'This operation updates a system link'
+      summary: Update Buyer System Link
+      operationId: UpdateBuyerSystemLink
+      parameters:
+        # Path
+        - $ref: '#/parameters/SystemLinkIdPath'
+        # Param
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/SystemLink'
+      responses:
+        '201':
+          description: 'System link updated succesfully'
+          schema:
+            $ref: '#/definitions/SystemLink'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.UpdateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.UpdateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '422':
+          description: 'Unprocessable Entity'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "BuyerTechnicalException", "code": "BU_DS_0059", "message": "There is a system_link with system code {system_code} already active for this buyer {buyer_id}", "source": "BuyerDS.UpdateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: { "severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0054", "message": "The system link could not be updated due to a technical error", "source": "BuyerDS.UpdateBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+
+    delete:
+      tags:
+        - Links
+      security:
+        - Bearer: []
+      description: 'Delete a system link from a given buyer'
+      summary: Delete Buyer System Link
+      operationId: DeleteBuyerSystemLink
+      parameters:
+        # Path
+        # Param
+        - $ref: '#/parameters/SystemLinkIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '204':
+          description: 'System link deleted succesfuly'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.DeleteBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.DeleteBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+        '500':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0055", "message": "The system link could not be deleted due to a technical error", "source": "BuyerDS.DeleteBuyerSystemLink", "target": [{"key": "buyer_id","value": 12345667},{"key": "country_iso_3_code","value": "ESP"}]}
+          headers: {}
+  /buyers/{buyer_id}/short-notes/history/save-points:
+    x-summary: Get Buyer Short Note History Savepoints
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Short note
+      description: 'This operation retrieves history save points of buyer short note modifications'
+      summary: Get Buyer Short Note History Savepoints
+      operationId: GetBuyerShortNoteHistorySavePoints
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/HistorySavePointsPaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerShortNoteHistorySavePoints", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerShortNoteHistorySavePoints", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0070", "message": "The buyer short notes history savepoints cannot be obtained due to a technical issue", "source": "BuyerDS.GetBuyerShortNoteHistorySavePoints", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+  /buyers/{buyer_id}/suppression-date/history/save-points:
+    x-summary: Get Buyer Suppression Date History Savepoints
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - Suppression date
+      description: 'This operation retrieves history save points of suppression date modifications'
+      summary: Get Buyer Suppression Date History SavePoints
+      operationId: GetBuyerSuppressionDateHistorySavePoints
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/HistorySavePointsPaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericBadRequestException", "code": "GE_DS_0003", "message": "The input Parameters have an invalid format or wrong input parameters", "source": "BuyerDS.GetBuyerSuppressionDateHistorySavePoints", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "WARNING", "type": "GenericUserUnauthorisedException", "code": "GE_DS_0004", "message": "You do not have the enough permissions for perform this operation", "source": "BuyerDS.GetBuyerSuppressionDateHistorySavePoints", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          examples:
+            application/json: {"severity": "ERROR", "type": "BuyerTechnicalException", "code": "BU_DS_0071", "message": "The buyer suppression date history savepoints cannot be obtained due to a technical issue", "source": "BuyerDS.GetBuyerSuppressionDateHistorySavePoints", "target": [{"key": "buyer_id","value": 12345667}]}
+          headers: {}
+
+definitions:
+  # Error Object Definition
+  ErrorObject:
+    title: ErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'ERROR'
+      type:
+        description: 'Type of Exception or error or warning. Can be generic exceptions or even custom defined exceptions specific to the API'
+        type: string
+        example: 'NullPointerException'
+      code:
+        description: Specific error/warning code for a particular error, very specific to the API/application. The old faultcode.
+        type: string
+        example: 'GE_XP_0003'
+      message:
+        description: 'A descriptive error message for the consumer. The old faultstring.'
+        type: string
+        example: 'The operation over the buyer 1234 failed due to an internal error'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'BuyerBAS.UpdateBuyerManualUnderwritingSettings'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+      inner_errors:
+        description: 'An array of internal errors which might provide the stack trace of all the internal errors codes being returned by all the inner systems, hence leading to this parent error..'
+        type: array
+        items:
+          $ref: '#/definitions/InnerErrorObject'
+    required:
+      - severity
+      - type
+      - code
+      - message
+  ErrorObjectPairValueKey:
+    title: ErrorObjectPairValueKey
+    type: object
+    properties:
+      key:
+        description: 'Key / identifier'
+        type: string
+        example: 'buyer_id'
+      value:
+        description: 'Value'
+        type: string
+        example: '1234'
+  InnerErrorObject:
+    title: InnerErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'ERROR'
+      code:
+        description: 'Specific error/warning code for a particular error, very specific to the API/application. The old faultcode'
+        type: string
+        example: 'GE_XP_0003'
+      message:
+        description: 'A descriptive error message for the consumer. The old faultstring.'
+        type: string
+        example: 'The operation over the buyer 1234 failed due to an internal error'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'BuyerBAS.UpdateBuyerManualUnderwritingSettings'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+
+  AuditFields:
+    title: AuditFields
+    type: object
+    properties:
+      create_date:
+        description: 'Creation date. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      create_uid:
+        description: 'User who created the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      last_update_date:
+        description: 'Date when the record was updated. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      last_update_uid:
+        description: 'User who updated the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      effect_from_date:
+        description: 'Date when the record started being effective'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effective'
+        type: string
+        format: date-time
+        example: '2221-01-02T22:22:22Z'
+        readOnly: true
+  Pagination:
+    title: Pagination
+    description: Used for the paginated operations
+    type: object
+    properties:
+      total_results:
+        type: integer
+        format: int32
+        example: 72
+      count:
+        type: integer
+        example: 50
+        format: int32
+      has_more:
+        type: boolean
+        example: true
+      limit:
+        type: integer
+        format: int32
+        example: 50
+      offset:
+        type: integer
+        format: int32
+        example: 0
+  # TBBM_BUYERS, TBBM_BUYER_DETAILS
+  CreateBuyerDetails:
+    title: CreateBuyerDetails
+    type: object
+    properties:
+      # TBBM_BUYER_DETAILS
+      id:
+        description: 'Buyer details identifier'
+        example: 12345678
+        type: integer
+        format: int64
+        readOnly: true
+      org_id:
+        description: 'Organisation identifier'
+        example: 12345678
+        type: integer
+        format: int32
+      currency_code:
+        description: 'Code which indicates the currency in which the standard and review limits are specified'
+        example: 'EUR'
+        type: string
+        maxLength: 3
+        default: 'EUR'
+    required:
+      - org_id
+  BuyerDetails:
+    title: BuyerDetails
+    type: object
+    allOf:
+      - type: object
+        properties:
+          # TBBM_BUYER_DETAILS
+          id:
+            description: 'Buyer details identifier'
+            example: 12345678
+            type: integer
+            format: int64
+            readOnly: true
+          buyer_id:
+            description: 'Organisation identifier'
+            example: 12345678
+            type: integer
+            format: int64
+          currency_code:
+            description: 'Code which indicates the currency in which the standard and review limits are specified'
+            example: 'EUR'
+            type: string
+            maxLength: 3
+            default: 'EUR'
+      - $ref: '#/definitions/ShortNote'
+      - $ref: '#/definitions/SuppressionDate'
+      - $ref: '#/definitions/Owner'
+      - $ref: '#/definitions/AuditFields'
+  BuyerDetailsPaginated:
+    title: BuyerDetailsPaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerDetails'
+      - $ref: '#/definitions/Pagination'
+  # TBBM_BUYER_DETAILS (Only OWNER ATTRS)
+  Owner:
+    title: Owner
+    type: object
+    properties:
+      owner_id:
+        description: Functional Group ID who is responsible for updating the information on the Buyer
+        example: 12345678
+        type: integer
+        format: int64
+      owner_id_modified_date:
+        description: Date and time the Owner ID has been updated
+        example: '2021-01-01T22:11:00Z'
+        type: string
+        format: date-time
+        readOnly: true
+      owner_id_modified_user:
+        description: 'Indicates who made the last update of `owner_id`'
+        example: 128281
+        type: integer
+        format: int64
+        readOnly: true
+      owner_type:
+        $ref: '#/definitions/OwnerType'
+      owner_non_standard_flag:
+        description: 'Non standard ownership flag'
+        example: 'N'
+        type: string
+        default: 'N'
+        maxLength: 1
+    required:
+      - owner_id
+      - owner_type
+  OwnerType:
+    title: OwnerType
+    description: Owner Type specifies whether the Owner ID is related to an individual or functional group.
+    type: string
+    enum:
+      - 'I'
+      - 'G'
+    example: 'I'
+  BuyerOwner:
+    title: BuyerOwner
+    type: object
+    allOf:
+      - $ref: '#/definitions/Owner'
+      - $ref: '#/definitions/AuditFields'
+  BuyerOwnerPaginated:
+    title: BuyerOwnerPaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerOwner'
+      - $ref: '#/definitions/Pagination'
+  # TBBM_BUYER_DETAILS (Only Short Note)
+  ShortNote:
+    title: ShortNote
+    type: object
+    properties:
+      short_note:
+        description: 'Free text - Note texts'
+        example: 'In an uncertain place in La Mancha where lives an uncertain knight of an uncertain name who leaves his uncertain village for a geography'
+        type: string
+        maxLength: 4000
+      short_note_modified_date:
+        description: Date and Time the Short Note has been updated
+        example: '2021-01-01T22:11:00Z'
+        type: string
+        format: date-time
+        readOnly: true
+      short_note_modified_user:
+        description: 'Indicates who made the last update of `short_note`'
+        example: 128281
+        type: integer
+        format: int64
+        readOnly: true
+    required:
+      - short_note
+  BuyerShortNote:
+    title: BuyerShortNote
+    type: object
+    allOf:
+      - $ref: '#/definitions/ShortNote'
+      - $ref: '#/definitions/AuditFields'
+  BuyerShortNotePaginated:
+    title: BuyerShortNotePaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerShortNote'
+      - $ref: '#/definitions/Pagination'
+  # TBBM_BUYER_DETAILS (Only Suppression Date)
+  SuppressionDate:
+    title: SuppressionDate
+    type: object
+    properties:
+      suppression_date:
+        description: 'Suppression date (For all countries excluding Spain, Portugal and Andorra.) ISO8601 format [YYYY-MM-DD]'
+        example: '2021-01-01'
+        type: string
+        format: date
+      suppression_date_modified_date:
+        description: 'Indicates when the suppression date was modified'
+        example: '2021-01-01T22:11:00Z'
+        type: string
+        format: date-time
+        readOnly: true
+      suppression_date_modified_user:
+        description: 'Indicates who made the last update of `short_note`'
+        example: 128281
+        type: integer
+        format: int64
+        readOnly: true
+    required:
+      - suppression_date
+  BuyerSuppressionDate:
+    title: BuyerSuppressionDate
+    type: object
+    allOf:
+      - $ref: '#/definitions/SuppressionDate'
+      - $ref: '#/definitions/AuditFields'
+  BuyerSuppressionDatePaginated:
+    title: BuyerSuppressionDatePaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerSuppressionDate'
+      - $ref: '#/definitions/Pagination'
+  # TBBM_BUYER_TAGS (Tags)
+  BuyerTag:
+    title: BuyerTag
+    type: object
+    allOf:
+      - type: object
+        properties:
+          id:
+            description: 'Identifier (Primary Key)'
+            example: 1
+            type: integer
+            format: int64
+            readOnly: true
+          buyer_tag_id:
+            description: 'Tag code which is extracted from Buyer Tags Reference Data, domain BUYER_TAG_ID. [CODE_VAL1]'
+            example: 1
+            type: integer
+            format: int32
+          buyer_tag_type:
+            description: 'Tag type which is extracted from Buyer Tags Reference Data, domain BUYER_TAG_ID [CODE_VAL2]'
+            example: 'System'
+            type: string
+            enum: ['Optional', 'System']
+            readOnly: true
+          buyer_tag_color:
+            description: 'Tag hexadecimal color code #RRGGBB for this tag. Buyer Tags Reference Data, domain BUYER_TAG_ID [CODE_VAL3]'
+            example: '#88FF11'
+            type: string
+            readOnly: true
+          buyer_tag_description:
+            description: 'Tag description  which is extracted from Buyer Tags Reference Data, domain BUYER_TAG_ID. [CODE_DES]'
+            example: SRM
+            type: string
+            maxLength: 240
+            readOnly: true
+      - $ref: '#/definitions/AuditFields'
+  BuyerTagPaginated:
+    title: BuyerTagPaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerTag'
+      - $ref: '#/definitions/Pagination'
+  BuyerTagReplace:
+    title: BuyerTagReplace
+    type: object
+    properties:
+      buyer_tag_id_source:
+        description: 'Old Tag reference identifier'
+        example: 1
+        type: integer
+        format: int32
+      buyer_tag_id_target:
+        description: 'New Tag reference identifier'
+        example: 2
+        type: integer
+        format: int32
+    required:
+      - buyer_tag_id_source
+      - buyer_tag_id_target
+  # TBBM_REF_DATA_BUYERS
+  BuyerReferenceData:
+    title: BuyerReferenceData
+    type: object
+    allOf:
+      - $ref: '#/definitions/ReferenceData'
+      - $ref: '#/definitions/AuditFields'
+  ReferenceData:
+    title: ReferenceData
+    type: object
+    properties:
+      id:
+        description: 'Internal primary key of the buyer reference data'
+        example: 1
+        type: integer
+        format: int64
+        readOnly: true
+      domain_name:
+        description: 'Determines the reference data to be obtained'
+        example: 'AUTO_STRATEGY_REASON'
+        type: string
+        maxLength: 100
+      code_value1:
+        description: 'Principal value of this reference data.'
+        example: '10'
+        type: string
+        maxLength: 240
+      code_value2:
+        description: 'Secondary value of this reference data'
+        example: ''
+        type: string
+        maxLength: 240
+      code_value3:
+        description: 'Third value of this reference data'
+        example: ''
+        type: string
+        maxLength: 240
+      code_description:
+        description: 'Description of the reference data in the language requested'
+        example: 'Automatic Underwriting Strategy Reason'
+        type: string
+        maxLength: 240
+    required:
+      - domain_name
+      - code_value1
+      - code_description
+  # TBBM_BUYER_NOTE_ORGS | TBBM_BUYER_NOTE_DETAILS | TBBM_NOTE_TAGS | TBBM_CS_INDIVIDUAL
+  Note:
+    title: Note
+    type: object
+    properties:
+      id:
+        description: 'Primary key of this note'
+        example: 2
+        type: integer
+        format: int64
+        readOnly: true
+      org_id:
+        description: 'Organisation identifier'
+        example: 12345678
+        type: integer
+        format: int32
+        readOnly: true
+      main_flag:
+        description: 'Indicates if this note was created in the context of this buyer / organisation or other. This property is ignored in update operations'
+        example: 'Y'
+        type: string
+        enum: ['Y', 'N']
+        readOnly: true
+      note_text:
+        description: 'Text of the note'
+        example: 'I think this buyer is tricking us with the amount of trading they are doing'
+        type: string
+        maxLength: 4000
+      confidentiality_level:
+        description: 'Indicates the confidentiality level of this note. Check BUYER_NOTE_CONFIDENTIALITY_LEVEL domain for possible values'
+        example: 2
+        type: integer
+        format: int32
+        default: 1
+      confidentiality_level_description:
+        description: 'Descriptive text of the `confidentiality_level` in the given language.'
+        example: 'Strictly confidential'
+        type: string
+        readOnly: true
+      contact_individual_id:
+        description: 'Individual identifier of the contact'
+        example: 182732
+        type: integer
+        format: int64
+      contact_sequence:
+        description: 'Internal sequence number to identify the contact which belongs to an address of the specific organisation. Part of the multiple primary key in Contact SC'
+        example: 1
+        type: integer
+        format: int32
+      contact_type:
+        description: 'Type of the contact. Part of the multiple primary key in Contact SC. See more in Get CG ref Code Data domain CONTACT TYPE'
+        example: 'MAIN'
+        type: string
+        maxLength: 4
+      contact_name_address_id:
+        description: 'Name address identifier where the contact belongs to. Part of the multiple primary key in Contact SC'
+        example: 83898
+        type: integer
+        format: int64
+      contact_org_id:
+        description: 'Organisation where this contact belongs to. Part of the multiple primary key in Contact SC'
+        example: 12345648
+        type: integer
+        format: int32
+      related_orgs:
+        type: array
+        items:
+          type: object
+          properties:
+            ornnn_id:
+              description: 'Organisation identifier'
+              example: 12345678
+              type: integer
+              format: int32
+      tags:
+        type: array
+        items:
+          $ref: '#/definitions/NoteTag'
+    required:
+      - note_text
+      - confidentiality_level
+  NoteTag:
+    title: NoteTag
+    type: object
+    properties:
+      id:
+        description: 'Identifier (Primary Key)'
+        example: 1
+        type: integer
+        format: int64
+        readOnly: true
+      tag_id:
+        description: 'Unique identifier of the tag. Check BUYER_NOTE_TAG_ID domain for possible values'
+        example: 1
+        type: integer
+        format: int32
+      tag_description:
+        description: 'Descriptive text of the `tag_id` for the given language. Only for retrieval operations'
+        example: 'Limit Appeal'
+        type: string
+        maxLength: 4000
+        readOnly: true
+  BuyerNote:
+    title: BuyerNote
+    type: object
+    allOf:
+      - $ref: '#/definitions/Note'
+      - $ref: '#/definitions/AuditFields'
+  BuyerNotePaginated:
+    title: BuyerNotePaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/BuyerNote'
+      - $ref: '#/definitions/Pagination'
+
+  SystemLink:
+    title: SystemLink
+    type: object
+    allOf:
+      - type: object
+        properties:
+          id:
+            description: 'Primary key of the system link'
+            type: integer
+            format: int64
+            example: 1
+            readOnly: true
+          system_name:
+            description: 'Name of the system'
+            type: string
+            example: 'Iberinform / InsightView'
+          system_code:
+            description: "Possible code to identify the system, if available as part of the external identifiers in Organisation"
+            type: string
+            example: 'IB'
+          base_url:
+            description: 'URL of the System Link'
+            type: string
+            example: "https://desa.insightview.es"
+          detail_path:
+            description: 'Optional additional path to the `base_url` for building an exact link to a specific page'
+            type: string
+            example: '/v2/#/empresa/{id}'
+          allowed_countries:
+            description: 'List of countries where the links applies to. If empty, it applies to every country. ISO-3166 alpha-3'
+            type: array
+            items:
+              type: string
+            example: ['ESP', 'NLD']
+        required:
+          - link_base_url
+          - system_name
+          - system_code
+      - $ref: '#/definitions/AuditFields'
+
+  HistorySavePointsPaginated:
+    title: HistorySavePointsPaginated
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/AuditFields'
+      - $ref: '#/definitions/Pagination'
+tags:
+  - name: Details
+    description: Buyer details operations
+  - name: Reference data
+    description: Contains the operation for creating, retrieven buyer specific reference data
+  - name: Ownership
+    description: Buyer operations over the ownership
+  - name: Short note
+    description: Buyer operations over the short notes
+  - name: Suppression date
+    description: Buyer operations over the suppression date
+  - name: Tags
+    description: Buyer Tags operations for adding, removing or replacing tags
+  - name: Notes
+    description: Buyer operations over the notes
+  - name: Non-Payment Notices
+    description: Buyer Non-payment Notices
+  - name: Payment Extensions
+    description: Buyer Payment Extensions
+  - name: Links
+    description: Buyer operations for managing system links related

@@ -1,0 +1,558 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: "CI: Risk - Buyer SNA Data Service API v1"
+  description: |-
+    This API is based on the **Buyer CBO** and provides the operations for buyer SNA matches related to an **Organisation** with the role *BUYR* (Buyer) such as  **SNA**
+    
+    Please note that the API request structure will be validated like mandatory fields, if a number is a number, etc.
+
+    ### Effective Date Reference
+    
+    The operations makes usage of *Effective* dates for retrieving information in a specific **Period of Time** as following
+
+    <table>
+      <tr>
+        <th>Effect From</th>
+        <th>Effect To</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>NULL</td>
+        <td>Only the current active record will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>NULL</td>
+        <td>All the records from the <b>effect_from_date</b> until <b>current date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>DATE</td>
+        <td>All the historic records until <b>effect_to_date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>DATE</td>
+        <td>Returns all the records from the <b>effect_from_date</b> and the <b>effect_to_date</b> given</td>
+      </tr>
+    </table>
+    
+    ### Reference data domains
+    https://confluence.atradius.com/confluence/display/CW/SNA+Match+Status
+
+host: _apigw-host_
+basePath: /risk/buyers/v1
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+parameters:
+  # Path
+  BuyerIdPath:
+    name: buyer_id
+    in: path
+    required: true
+    type: integer
+    format: int32
+    description: 'Buyer identifier'
+  SNAIdPath:
+    name: sna_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: "SNA identifier"
+  # Param
+  OffsetParam:
+    in: query
+    name: offset
+    required: false
+    type: integer
+    format: int32
+    minimum: 0
+    description: 'The number of items to skip before starting to collect the result set.'
+  LimitParam:
+    in: query
+    name: limit
+    required: false
+    type: integer
+    format: int32
+    minimum: 1
+    maximum: 200
+    description: 'The numbers of items to return.'
+  LanguageParam:
+    name: language_code
+    in: query
+    required: false
+    type: string
+    description: 'The language in which data may be returned'
+    default: 'EN'
+  EffectFromDateParam:
+    name: effect_from_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effective from data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+  EffectToDateParam:
+    name: effect_to_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effective to data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+  # Headers
+  # Headers
+  AtradiusApiKey:
+    name: CibtW2-App-Key
+    in: header
+    required: true
+    type: string
+    description: 'Key Validation Policies'
+  AtradiusOriginUserIdHeader:
+    name: Atradius-Origin-User-Id
+    in: header
+    required: true
+    type: string
+    description: 'Name of the user who is performing an action in a system (Note this is normally the login ID coming from the LDAP'
+  AtradiusOriginApplicationHeader:
+    name: Atradius-Origin-Application
+    in: header
+    required: true
+    type: string
+    description: 'Identification of the application which invoked the service'
+  AtradiusOriginServiceHeader:
+    name: Atradius-Origin-Service
+    in: header
+    required: true
+    type: string
+    description: 'The name of origin (parent) service which is invoked'
+  AtradiusInvocationServiceHeader:
+    name: Atradius-Invocation-Service
+    in: header
+    required: true
+    type: string
+    description: 'The invocation service URL'
+  AtradiusMessageTimestampHeader:
+    name: Atradius-Message-Timestamp
+    in: header
+    required: true
+    type: string
+    description: 'The timestamp when the client is invoked the origin service'
+  AtradiusMessageIdHeader:
+    name: Atradius-Message-Id
+    in: header
+    required: false
+    type: string
+    format: uuid
+    description: 'Unique identifier of the message that has been send'
+  AtradiusCorrelationIdHeader:
+    name: Atradius-Correlation-Id
+    in: header
+    required: false
+    type: string
+    format: uuid
+    description: 'Unique identifier of a transaction over various applications / components'
+  AtradiusConcurrencyControlVersionHeader:
+    name: Atradius-Concurrency-Control-Version
+    in: header
+    required: false
+    type: string
+    description: 'A placeholder were we can store a string with relevant information to perform in the data store the verification of the optimistic concurrency control. Block to capture the information which might be required as part of the Optimistic concurrency control (OCC) which is a concurrency control method applied to transactional systems.'
+
+paths:
+  /buyers/{buyer_id}/sna:
+    x-summary: Get SNA Matches
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - SNA
+      description: 'This operation retrieves the SNA (Social Network Analysis) matches for a given buyer.<I>Only for Spain, Portugal and Andorra buyers.</I>'
+      summary: Get Buyer SNA Matches
+      operationId: GetBuyerSnaMatches
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Header
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieved SNA matches'
+          schema:
+            $ref: '#/definitions/BuyerSNAMatchesPaginated'
+          headers: {}
+        '400':
+          description: 'Request failed due to input validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '404':
+          description: 'The requested resource can not be found'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+  /buyers/{buyer_id}/sna/{sna_id}:
+    x-summary: Get / Update SNA Match by id
+    get:
+      security:
+        - Bearer: []
+      tags:
+        - SNA
+      description: 'This operation retrieves the SNA (Social Network Analysis) match for the given sna_id for the given buyer.<I>Only for Spain, Portugal and Andorra buyers.</I>'
+      summary: Get Buyer SNA Match
+      operationId: GetBuyerSnaMatch
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/SNAIdPath'
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        # Header
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieved SNA match'
+          schema:
+            $ref: '#/definitions/BuyerSNAMatches'
+          headers: {}
+        '400':
+          description: 'Request failed due to input validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '404':
+          description: 'The requested resource can not be found'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+    put:
+      tags:
+        - SNA
+      security:
+        - Bearer: []
+      description: 'Update a single SNA (Social Network Analysis) match for the given sna_id and buyer.<I>Only for Spain, Portugal and Andorra buyers.</I>'
+      summary: Update Buyer SNA Match
+      operationId: UpdateBuyerSnaMatch
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/SNAIdPath'
+        # Param
+        # Header
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/SNA'
+      responses:
+        '200':
+          description: 'SNA updated successfully'
+          schema:
+            $ref: '#/definitions/BuyerSNAMatches'
+          headers: {}
+        '400':
+          description: 'Request failed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '404':
+          description: 'The requested resource can not be found'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+definitions:
+  # Common schemas
+  ErrorObject:
+    title: ErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'ERROR'
+      type:
+        description: 'Type of Exception or error or warning. Can be generic exceptions or even custom defined exceptions specific to the API'
+        type: string
+        example: 'NullPointerException'
+      code:
+        description: Specific error/warning code for a particular error, very specific to the API/application. The old faultcode.
+        type: string
+        example: 'BU_DS_0001'
+      message:
+        description: 'A descriptive error message for the consumer. The old faultstring.'
+        type: string
+        example: 'The operation over the buyer 1234 failed due to an internal error'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'BuyerBAS.UpdateBuyerManualUnderwritingSettings'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+      inner_errors:
+        description: 'An array of internal errors which might provide the stack trace of all the internal errors codes being returned by all the inner systems, hence leading to this parent error..'
+        type: array
+        items:
+          $ref: '#/definitions/InnerErrorObject'
+
+    required:
+      - severity
+      - type
+      - code
+      - message
+  ErrorObjectPairValueKey:
+    title: ErrorObjectPairValueKey
+    type: object
+    properties:
+      key:
+        description: 'Key / identifier'
+        type: string
+        example: 'allocation_rules_id'
+      value:
+        description: 'Value'
+        type: string
+        example: '1234'
+
+  InnerErrorObject:
+    title: InnerErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'CRITICAL'
+      code:
+        description: 'Specific error/warning code for a particular error, very specific to the API/application. The old faultcode'
+        type: string
+        example: 'AMA-0001'
+      message:
+        description: 'A descriptive error message for the consumer'
+        type: string
+        example: 'Got connection time out from information gateway'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'IGS0001-INFORMATION-GATEWAY'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+  AuditFields:
+    title: AuditFields
+    type: object
+    properties:
+      create_date:
+        description: 'Creation date. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      create_uid:
+        description: 'User who created the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      last_update_date:
+        description: 'Date when the record was updated. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      last_update_uid:
+        description: 'User who updated the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      effect_from_date:
+        description: 'Date when the record started being effective'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effective'
+        type: string
+        format: date-time
+        example: '2221-01-02T22:22:22Z'
+        readOnly: true
+
+  Pagination:
+    title: Pagination
+    description: Used for the paginated operations
+    type: object
+    properties:
+      total_results:
+        type: integer
+        format: int32
+        example: 72
+      count:
+        type: integer
+        example: 50
+        format: int32
+      has_more:
+        type: boolean
+        example: true
+      limit:
+        type: integer
+        format: int32
+        example: 50
+      offset:
+        type: integer
+        format: int32
+        example: 0
+
+  BuyerSNAMatchesPaginated:
+    title: BuyerSNAMatchesPaginated
+    description: 'List of Matched Social Network Analysis(SNA)'
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/SNA'
+      - $ref: '#/definitions/Pagination'
+  BuyerSNAMatches:
+    title: BuyerSNAMatches
+    type: object
+    allOf:
+      - $ref: '#/definitions/SNA'
+      - $ref: '#/definitions/AuditFields'
+  SNA:
+    title: SNA
+    type: object
+    properties:
+      sna_id:
+        description: 'SNA identifier'
+        type: integer
+        format: int64
+        example: 1234567898989
+        maxLength: 22
+      sna_alert_date:
+        description: 'Date when the sna alert received'
+        example: '2021-01-01'
+        type: string
+        format: date
+      coincidence_type:
+        description: 'Coincidence type e.g. 1. Phone Number, 2. Company Name, 3. Address, 4. Current Administrators, 5. Buyer registration number'
+        type: integer
+        format: int32
+        example: 2
+        maxLength: 1
+      coincidence_value:
+        description: 'Coincidence description'
+        type: string
+        example: "Company name"
+      sna_alert_buyer_id:
+        description: 'Organisation ID that has a SNA match with the selected buyer'
+        type: integer
+        format: int64
+        example: 34534520
+        maxLength: 8
+      sna_match_origin_indicator:
+        description: 'SNA match indicator , indicator value for either Origin(O) or Target(T)'
+        type: string
+        enum: ['O','T']
+        maxLength: 1
+        example: 'O'
+      status:
+        description: 'SNA status code e.g. 1. Accepted, 2. Rejected, 3. Pending'
+        type: string
+        example: '2'
+      status_description:
+        description: 'SNA status code description e.g. 1. Accepted, 2. Rejected, 3. Pending'
+        type: string
+        example: 'Rejected'
+    required:
+      - sna_alert_date
+tags:
+  - name: SNA
+    description: Buyer operations related to SNA

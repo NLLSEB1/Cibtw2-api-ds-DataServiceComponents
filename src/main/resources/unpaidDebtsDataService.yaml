@@ -1,0 +1,1185 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: "CI: Risk - Buyer Unpaid Debts Data Service API v1"
+  description: |-
+    This API is based on the **Buyer CBO** and provides the operations for multiple sections of the **Buyer CBO** as listed below.
+    
+    These sections of **Buyer CBO** holds data for the buyer's negative information. The operations of section **Unpaid Debts** in this APIs will be used for the buyers from <I>French / French territories</I>.
+    
+    
+    Please note that the API request structure will be validated like mandatory fields, if a number is a number, etc.
+
+    ### CBO
+    **Buyer**
+    Sections :  **Unpaid Debts**/ **Privileges**/**Payment Index**
+    
+    ### Effective dates Reference
+    
+    The operations makes usage of *Effect* dates for retrieving information in a specific **Period of Time** as following
+
+    <table>
+      <tr>
+        <th>Effect From Date </th>
+        <th>Effect To Date</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>NULL</td>
+        <td>Only the current active record will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>NULL</td>
+        <td>All the records from the <b>effect_from_datee</b> until <b>current date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>DATE</td>
+        <td>All the historic records until <b>effect_to_datee</b> will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>DATE</td>
+        <td>Returns all the records from the <b>effect_from_datee</b> and the <b>effect_to_date</b> given</td>
+      </tr>
+    </table>
+
+    ### API Owner
+    
+    **Name**: Cesar Herrera Garcia (temporary) <br>
+    **Email**: cesar.herreragarcia@atradius.com
+    
+    ### Product Owner
+    
+    **Name:** Roy Dekker <br>
+    **Email:** roy.dekker@atradius.com
+
+host: _apigw-host_
+basePath: /risk/buyers/v1
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+parameters:
+  # Path
+  BuyerIdPath:
+    name: buyer_id
+    in: path
+    required: true
+    type: integer
+    format: int32
+    description: 'Buyer identifier'
+
+  # Param
+  OffsetParam:
+    in: query
+    name: offset
+    required: false
+    type: integer
+    format: int32
+    minimum: 0
+    description: 'The number of items to skip before starting to collect the result set.'
+  LimitParam:
+    in: query
+    name: limit
+    required: false
+    type: integer
+    format: int32
+    minimum: 1
+    maximum: 200
+    description: 'The numbers of items to return.'
+  LanguageParam:
+    name: language_code
+    in: query
+    required: false
+    type: string
+    description: 'The language in which data may be returned'
+    default: 'EN'
+  EffectFromParam:
+    name: effect_from_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effect from data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+  EffectToParam:
+    name: effect_to_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effect to data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+
+  # Headers
+  AtradiusApiKey:
+    name: CibtW2-App-Key
+    in: header
+    required: true
+    type: string
+    description: 'Key Validation Policies'
+  AtradiusOriginUserIdHeader:
+    name: Atradius-Origin-User-Id
+    in: header
+    required: true
+    type: string
+    description: 'Name of the user who is performing an action in a system (Note this is normally the login ID coming from the LDAP'
+  AtradiusOriginApplicationHeader:
+    name: Atradius-Origin-Application
+    in: header
+    required: true
+    type: string
+    description: 'Identification of the application which invoked the service'
+  AtradiusOriginServiceHeader:
+    name: Atradius-Origin-Service
+    in: header
+    required: true
+    type: string
+    description: 'The name of origin (parent) service which is invoked'
+  AtradiusInvocationServiceHeader:
+    name: Atradius-Invocation-Service
+    in: header
+    required: true
+    type: string
+    description: 'The invocation service URL'
+  AtradiusMessageTimestampHeader:
+    name: Atradius-Message-Timestamp
+    in: header
+    required: true
+    type: string
+    description: 'The timestamp when the client is invoked the origin service'
+  AtradiusMessageIdHeader:
+    name: Atradius-Message-Id
+    in: header
+    required: false
+    type: string
+    format: uuid
+    description: 'Unique identifier of the message that has been send'
+  AtradiusCorrelationIdHeader:
+    name: Atradius-Correlation-Id
+    in: header
+    required: true
+    type: string
+    format: uuid
+    description: 'Unique identifier of a transaction over various applications / components'
+  AtradiusConcurrencyControlVersionHeader:
+    name: Atradius-Concurrency-Control-Version
+    in: header
+    required: false
+    type: string
+    description: 'A placeholder were we can store a string with relevant information to perform in the data store the verification of the optimistic concurrency control. Block to capture the information which might be required as part of the Optimistic concurrency control (OCC) which is a concurrency control method applied to transactional systems.'
+
+paths:
+  /buyers/{buyer_id}/unpaid-debts/summary:
+    x-summary: Buyer Unpaid Debts Summary
+    get:
+      tags:
+        - Unpaid Debts
+      security:
+        - Bearer: []
+      description: 'This operation retrieves active records from the unpaid Debts and perpare or aggregates unpaid Debts summary for the given buyer.<I>Only for French / French territories buyers</I>'
+      summary: Get Buyer Unpaid Debts Summary
+      operationId: GetBuyerUnpaidDebtsSummery
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'record_date:a', 'record_date:d', 'ssx_rating_code:a', 'ssx_rating_code:d']
+          description: 'Array of fields to sort on.'
+          default: ['effect_from_date:d']
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer unpaid debts summary'
+          schema:
+            $ref: '#/definitions/UnpaidDebtsSummary'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/unpaid-debts:
+    x-summary: Unpaid Debts
+    get:
+      tags:
+        - Unpaid Debts
+      security:
+        - Bearer: []
+      description: 'This operation retrieves the unpaid Debts for the buyer as per given filters . <I>Only for French / French territories buyers</I>'
+      summary: Get Buyer Unpaid Debts
+      operationId: GetBuyerUnpaidDebts
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Param
+        - $ref: '#/parameters/EffectFromParam'
+        - $ref: '#/parameters/EffectToParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['record_date:a','record_date:d','effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer unpaid debts'
+          schema:
+            $ref: '#/definitions/UnpaidDebtsPaginated'
+
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/privileges-summary:
+    x-summary: Privileges Summary
+    get:
+      tags:
+        - Privileges
+      security:
+        - Bearer: []
+      description: 'This operation retrieves active recods of the buyers privileges and prepares privileges summary the given buyer. <I>Only for French / French territories buyers.</I>'
+      summary: Get Buyer Privileges Summary
+      operationId: GetBuyerPrivilegesSummary
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Param
+        - $ref: '#/parameters/LanguageParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'publication_date:a','publication_date:d']
+          description: 'Array of fields to sort on.'
+          default: ['effect_from_date:d']
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer privileges Summary'
+          schema:
+            $ref: '#/definitions/PrivilegesSummary'
+
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: ''
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/privileges:
+    x-summary: Buyer Privileges
+    get:
+      tags:
+        - Privileges
+      security:
+        - Bearer: []
+      description: 'This operation retrieves the buyers privileges details for the buyer as per supplied filter criteria. <I>Only for French / French territories buyers.</I>'
+      summary: Get Buyer Privileges
+      operationId: GetBuyerPrivileges
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Param
+        - $ref: '#/parameters/EffectFromParam'
+        - $ref: '#/parameters/EffectToParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d','publication_date:a','publication_date:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer privileges'
+          schema:
+            $ref: '#/definitions/PrivilegesPaginated'
+
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/payment-indexes:
+    x-summary: Buyer Payment Indexes
+    get:
+      tags:
+        - Payment Index
+      security:
+        - Bearer: []
+      description: 'This operation retrieves the buyer payment index overview for the buyer according to given filter criteria'
+      summary: Get Buyer Payment Indexes
+      operationId: GetBuyerPaymentIndexes
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Param
+        - $ref: '#/parameters/EffectFromParam'
+        - $ref: '#/parameters/EffectToParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer payment indexes'
+          schema:
+            $ref: '#/definitions/PaymentIndexPaginated'
+
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/unpaid-debts/debts-flag:
+    x-summary: Buyer unpaid debts flag
+    get:
+      tags:
+        - Unpaid Debts
+      security:
+        - Bearer: []
+      description: 'This operation derives and return a flag (Y/N), indicates a unpaid debt registered for buyers in the system.<I>Only for French / French territories buyers</I>'
+      summary: Get Buyer unpaid debts flag
+      operationId: GetBuyerUnpaidDebtsFlag
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer unpaid debts flag'
+          schema:
+            $ref: '#/definitions/UnpaidDebtsFlag'
+
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/unpaid-debts/ssx-rating:
+    x-summary: Buyer SSX Rating
+    get:
+      tags:
+        - Unpaid Debts
+      security:
+        - Bearer: []
+      description: 'This operation will return SSX rating for the buyer in France or French territories. <I> Only for French / French territories buyers.</I>'
+      summary: Get Buyer SSX Rating
+      operationId: GetBuyerSSXRating
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Param
+        - $ref: '#/parameters/EffectFromParam'
+        - $ref: '#/parameters/EffectToParam'
+        - $ref: '#/parameters/LanguageParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d','last_update_date:a','last_update_date:d','create_date:a','create_date:d','create_uid:a','create_uid:d','ssx_rating:a','ssx_rating:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer SSX rating'
+          schema:
+            $ref: '#/definitions/UnpaidDebtsSSXRating'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/unpaid-debts/new-claims-flag:
+    x-summary: Buyer New Claims Flag
+    get:
+      tags:
+        - Unpaid Debts
+      security:
+        - Bearer: []
+      description: 'This operation will return a flag that indicates a new claims data reported in the system for the buyer. <I>For all buyers expecting those from Spain, Portugal or Andorra</I>'
+      summary: Get Buyer New Claims Flag
+      operationId: GetBuyerNewClaimsFlag
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer new claims flag'
+          schema:
+            $ref: '#/definitions/NewClaimsFlag'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+definitions:
+  UnpaidDebtsSummary:
+    title: UnpaidDebtsSummary
+    type: object
+    properties:
+      ip_total:
+        $ref: '#/definitions/Aggregated'
+      cc_total:
+        $ref: '#/definitions/Aggregated'
+      outstanding_per_month:
+        type: array
+        items:
+          $ref: '#/definitions/OutstandingPerMonth'
+  OutstandingPerMonth:
+    title: OutstandingPerMonth
+    type: object
+    properties:
+      record_date:
+        type: string
+        format: date
+        description: 'Situation Date - end of month'
+        example: 'APR-21'
+      ssx_rating_code:
+        type: string
+        maxLength: 3
+        example: 100
+        readOnly: true
+        description: 'SSX rating end of every month'
+      effect_from_date:
+        description: 'Date when the record started being effect'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effect'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      ip:
+        $ref: '#/definitions/Aggregated'
+      cc:
+        $ref: '#/definitions/Aggregated'
+
+  PrivilegesSummary:
+    title: PrivilegesSummary
+    type: object
+    properties:
+      effect_from_date:
+        description: 'Date when the record started being effect'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effect'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      publication_date:
+        description: 'Date when record published'
+        type: string
+        format: date
+        example: '2021-01-02'
+        readOnly: true
+      latest_inscriptions:
+        type: array
+        items:
+          $ref: '#/definitions/Inscriptions'
+      aggregated_inscriptions:
+        type: array
+        items:
+          $ref: '#/definitions/AggregatedInscriptions'
+  AggregatedInscriptions:
+    title: Agreegared
+    type: object
+    properties:
+      documentation_type:
+        type: string
+        description : 'Type of documentation'
+        example: '10'
+      documentation_nature:
+        type: string
+        description: 'Nature of documentation'
+        example: '10'
+      documentation_desc:
+        type: string
+        enum: ['TRESOR','URSSAF']
+        description: "Description or Nature of documentation, TRESOR:Tax unpaid, URSSAF:Social security charges."
+        example: 'URSSAF'
+      amount:
+        type: number
+        format: double
+        description: 'Agrregated amount of specific document nature'
+        example: 90.98
+      count:
+        description: 'Agrregated count of specific document nature'
+        type: number
+        format: int32
+        example: 23
+  Inscriptions:
+    title: Inscriptions
+    type: object
+    properties:
+      documentation_type:
+        type: string
+        description : 'Type of documentation'
+        example: '10'
+      documentation_nature:
+        type: string
+        description: 'Nature of documentation'
+        example: '10'
+      documentation_desc:
+        type: string
+        enum: ['TRESOR','URSSAF']
+        description: "Description or Nature of documentation, TRESOR:Tax unpaid, URSSAF:Social security charges."
+        example: 'URSSAF'
+      amount:
+        type: number
+        format: double
+        description: 'Monetary Value'
+        example: 90.98
+      effect_from_date:
+        description: 'Date when the record started being effect (Date Inscription)'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effect'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+  UnpaidDebtsSSXRating:
+    title: UnpaidDebtsSSXRating
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/DailySSXRating'
+  DailySSXRating:
+    title: DailySSXRating
+    type: object
+    allOf:
+      - type: object
+        properties:
+          ssx_rating:
+            type: number
+            format: int32
+            example: 100
+            description: 'Daily SSX Rating'
+          effect_from_date:
+            description: 'Date when the record started being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+          effect_to_date:
+            description: 'Date when the record stopped being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+      - $ref: '#/definitions/AuditFields'
+
+  MonthlySSXRating:
+    title: MonthlySSXRating
+    type: object
+    allOf:
+      - type: object
+        properties:
+          ssx_rating:
+            type: number
+            format: int32
+            example: 100
+            description: 'Daily SSX Rating'
+          calc_date:
+            description: 'Date when ssx rating calculated'
+            type: string
+            format: date
+            example: '2021-01-02'
+            readOnly: true
+          last_update_date:
+            description: 'Date when the record last update date'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+      - $ref: '#/definitions/AuditFields'
+  UnpaidDebtsFlag:
+    title: UnpaidDebtsFlag
+    type: object
+    properties:
+      is_new_unpaid_debts:
+        type: string
+        enum: ['Y','N']
+        example: 'Y'
+        description: 'Indicator as soon as a new unpaid debts reporetd in the system'
+  NewClaimsFlag:
+    title: NewClaimsFlag
+    type: object
+    properties:
+      is_new_claims:
+        type: string
+        enum: ['Y','N']
+        example: 'Y'
+        description: 'Indicator as soon as a new claims data reporetd in the system'
+  PaymentIndexPaginated:
+    title: PaymentIndexPaginated
+    description: List of  Payment Index of the buyer
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/PaymentIndex'
+      - $ref: '#/definitions/Pagination'
+
+  PrivilegesPaginated:
+    title: PrivilegesPaginated
+    description: List of  Privileges of the buyer
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/Privileges'
+      - $ref: '#/definitions/Pagination'
+
+  UnpaidDebtsPaginated:
+    title: UnpaidDebtsPaginated
+    description: List of unpaid debts of buyer
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/UnpaidDebts'
+      - $ref: '#/definitions/Pagination'
+
+  PaymentIndex:
+    title: PaymentIndex
+    type: object
+    allOf:
+      - type: object
+        properties:
+          id:
+            type: integer
+            format: int32
+            description: unique identifier of record
+            example: 23456666
+            maxLength: 22
+            readOnly: true
+          payment_index:
+            type: string
+            description: 'Code indicating payment experience for the organisation'
+          harmoniselling ed_payment_index:
+            type: string
+            description: 'Code indicating hamonised payment experience for the organisation'
+          effect_from_date:
+            description: 'Date when the record started being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+          effect_to_date:
+            description: 'Date when the record stopped being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+      - $ref: '#/definitions/AuditFields'
+
+  Privileges:
+    title: Privileges
+    allOf:
+      - type: object
+        properties:
+          documentation_type:
+            type: string
+            description : 'Type of documentation'
+            example: '10'
+          documentation_nature:
+            type: string
+            description: 'Nature of documentation'
+            example: '10'
+          documentation_desc:
+            type: string
+            enum: ['TRESOR','URSSAF']
+            description: "Description or Nature of documentation, TRESOR:Tax unpaid, URSSAF:Social security charges."
+            example: 'URSSAF'
+          amount:
+            type: number
+            format: double
+            description: 'Monetary Value'
+            example: 90.98
+          effect_from_date:
+            description: 'Date when the record started being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+          effect_to_date:
+            description: 'Date when the record stopped being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+          publication_date:
+            description: 'Date when record published'
+            type: string
+            format: date
+            example: '2021-01-02'
+            readOnly: true
+          mutation_date:
+            description: 'Date record changed in SCRL'
+            type: string
+            format: date
+            example: '2021-01-02'
+            readOnly: true
+      - $ref: '#/definitions/AuditFields'
+
+  UnpaidDebts:
+    title: UnpaidDebts
+    type: object
+    allOf:
+      - type: object
+        properties:
+          record_date:
+            type: string
+            format: date
+            description: 'Situation Date'
+            example: '28-APR-21'
+          ssx_rating_code:
+            type: string
+            maxLength: 3
+            example: 100
+            readOnly: true
+            description: 'Daily ssx rating'
+          effect_from_date:
+            description: 'Date when the record started being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+          effect_to_date:
+            description: 'Date when the record stopped being effect'
+            type: string
+            format: date-time
+            example: '2021-01-02T22:22:22Z'
+            readOnly: true
+          movement_code:
+            type: string
+            enum: ['I', 'D', 'M', 'C']
+            example: 'I'
+            description: "Movement Code (I) - New Unpaid Debts, (M) - Updated Unpaid Debts, (D) - Added Unpaid Debts, (C) - Change of SIREN number"
+            readOnly: true
+          ip_not_accepted:
+            $ref: '#/definitions/Aggregated'
+          ip_accepted:
+            $ref: '#/definitions/Aggregated'
+          ip_bao_debts:
+            $ref: '#/definitions/Aggregated'
+          cc_not_accepted:
+            $ref: '#/definitions/Aggregated'
+          cc_accepted:
+            $ref: '#/definitions/Aggregated'
+          cc_bao_debts:
+            $ref: '#/definitions/Aggregated'
+      - $ref: '#/definitions/AuditFields'
+
+  Aggregated:
+    type: object
+    properties:
+      count:
+        type: integer
+        format: int32
+        example: 20
+      amount:
+        type: number
+        format: double
+        example: 3445.09
+
+  Pagination:
+    title: Pagination
+    description: Used for the paginated operations
+    type: object
+    properties:
+      total_results:
+        type: integer
+        format: int32
+        example: 72
+      count:
+        type: integer
+        example: 50
+        format: int32
+      has_more:
+        type: boolean
+        example: true
+      limit:
+        type: integer
+        format: int32
+        example: 50
+      offset:
+        type: integer
+        format: int32
+        example: 0
+
+  # Common schemas
+  ErrorObject:
+    title: ErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'ERROR'
+      type:
+        description: 'Type of Exception or error or warning. Can be generic exceptions or even custom defined exceptions specific to the API'
+        type: string
+        example: 'NullPointerException'
+      code:
+        description: Specific error/warning code for a particular error, very specific to the API/application. The old faultcode.
+        type: string
+        example: 'BU_DS_0001'
+      message:
+        description: 'A descriptive error message for the consumer. The old faultstring.'
+        type: string
+        example: 'The operation over the buyer 1234 failed due to an internal error'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'BuyerBAS.UpdateBuyerManualUnderwritingSettings'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+      inner_errors:
+        description: 'An array of internal errors which might provide the stack trace of all the internal errors codes being returned by all the inner systems, hence leading to this parent error..'
+        type: array
+        items:
+          $ref: '#/definitions/InnerErrorObject'
+
+    required:
+      - severity
+      - type
+      - code
+      - message
+  ErrorObjectPairValueKey:
+    title: ErrorObjectPairValueKey
+    type: object
+    properties:
+      key:
+        description: 'Key / identifier'
+        type: string
+        example: 'allocation_rules_id'
+      value:
+        description: 'Value'
+        type: string
+        example: '1234'
+
+  InnerErrorObject:
+    title: InnerErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'CRITICAL'
+      code:
+        description: 'Specific error/warning code for a particular error, very specific to the API/application. The old faultcode'
+        type: string
+        example: 'AMA-0001'
+      message:
+        description: 'A descriptive error message for the consumer'
+        type: string
+        example: 'Got connection time out from information gateway'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'IGS0001-INFORMATION-GATEWAY'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+
+  AuditFields:
+    title: AuditFields
+    type: object
+    properties:
+      create_date:
+        description: 'Creation date. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      create_uid:
+        description: 'User who created the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      last_update_date:
+        description: 'Date when the record was updated. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      last_update_uid:
+        description: 'User who updated the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      effect_from_date:
+        description: 'Date when the record started being effective'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effective'
+        type: string
+        format: date-time
+        example: '2221-01-02T22:22:22Z'
+        readOnly: true
+tags:
+  - name: Unpaid Debts
+    description: Buyer operations over the Unpaid Debts
+  - name: Privileges
+    description: Buyer privileges
+  - name: Payment Index
+    description: Buyer Payment Index

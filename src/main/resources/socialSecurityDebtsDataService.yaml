@@ -1,0 +1,639 @@
+swagger: '2.0'
+info:
+  version: '1.0'
+  title: 'CI: Risk - Buyer Social Security Debts Data Service API v1'
+  description: |-
+    This API is based on the **Buyer CBO** and provides the operations for its section
+    **Buyer Social Security Debts**.
+    **Buyer Social Security Debts** subsection of **Buyer CBO** holds Social Security Debts related data of buyer negative information. The buyers only from <I>Belgium</I> holds this information and the operations in this APIs used for the buyers from <I>Belgium</I>.   
+    
+    Please note that the API request structure will be validated like mandatory fields, if a number is a number, etc.
+    ### CBO
+    **Buyer**
+    Section :  **Buyer Negative Information/Social Security Debts**
+    ### Effective dates Reference
+    
+    The operations makes usage of *Effective* dates for retrieving information in a specific **Period of Time** as following.
+
+    <table>
+      <tr>
+        <th>Effect From</th>
+        <th>Effect To</th>
+        <th>Meaning</th>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>NULL</td>
+        <td>Only the current active record will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>NULL</td>
+        <td>All the records from the <b>effect_from_date</b> until <b>current date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>NULL</td>
+        <td>DATE</td>
+        <td>All the historic records until <b>effect_to_date</b> will be return</td>
+      </tr>
+      <tr>
+        <td>DATE</td>
+        <td>DATE</td>
+        <td>Returns all the records from the <b>effect_from_date</b> and the <b>effect_to_date</b> given</td>
+      </tr>
+    </table>
+    
+    ### Reference data
+    https://confluence.atradius.com/confluence/pages/viewpage.action?spaceKey=CW&title=Buyer+Management+Reference+Data
+    
+    ### API Owner
+    
+    **Name**: Cesar Herrera Garcia (temporary) <br>
+    **Email**: cesar.herreragarcia@atradius.com
+    
+    ### Product Owner
+    
+    **Name:** Roy Dekker <br>
+    **Email:** roy.dekker@atradius.com
+
+host: _apigw-host_
+basePath: /risk/buyers/v1
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+parameters:
+  # Path
+  BuyerIdPath:
+    name: buyer_id
+    in: path
+    required: true
+    type: integer
+    format: int32
+    description: 'Buyer identifier'
+  SocialSecurityIdPath:
+    name: social_security_id
+    in: path
+    required: true
+    type: integer
+    format: int64
+    description: 'Key identifier of record'
+
+  # Param
+  OffsetParam:
+    in: query
+    name: offset
+    required: false
+    type: integer
+    format: int32
+    minimum: 0
+    description: 'The number of items to skip before starting to collect the result set.'
+  LimitParam:
+    in: query
+    name: limit
+    required: false
+    type: integer
+    format: int32
+    minimum: 1
+    maximum: 200
+    description: 'The numbers of items to return.'
+  LanguageParam:
+    name: language_code
+    in: query
+    required: false
+    type: string
+    description: 'The language in which data may be returned'
+    default: 'EN'
+  EffectFromDateParam:
+    name: effect_from_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effective from data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+  EffectToDateParam:
+    name: effect_to_date
+    in: query
+    required: false
+    type: string
+    format: date-time
+    description: "Effective to data. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]"
+
+  # Headers
+  AtradiusApiKey:
+    name: CibtW2-App-Key
+    in: header
+    required: true
+    type: string
+    description: 'Key Validation Policies'
+  AtradiusOriginUserIdHeader:
+    name: Atradius-Origin-User-Id
+    in: header
+    required: true
+    type: string
+    description: 'Name of the user who is performing an action in a system (Note this is normally the login ID coming from the LDAP'
+  AtradiusOriginApplicationHeader:
+    name: Atradius-Origin-Application
+    in: header
+    required: true
+    type: string
+    description: 'Identification of the application which invoked the service'
+  AtradiusOriginServiceHeader:
+    name: Atradius-Origin-Service
+    in: header
+    required: true
+    type: string
+    description: 'The name of origin (parent) service which is invoked'
+  AtradiusInvocationServiceHeader:
+    name: Atradius-Invocation-Service
+    in: header
+    required: true
+    type: string
+    description: 'The invocation service URL'
+  AtradiusMessageTimestampHeader:
+    name: Atradius-Message-Timestamp
+    in: header
+    required: true
+    type: string
+    description: 'The timestamp when the client is invoked the origin service'
+  AtradiusMessageIdHeader:
+    name: Atradius-Message-Id
+    in: header
+    required: false
+    type: string
+    format: uuid
+    description: 'Unique identifier of the message that has been send'
+  AtradiusCorrelationIdHeader:
+    name: Atradius-Correlation-Id
+    in: header
+    required: true
+    type: string
+    format: uuid
+    description: 'Unique identifier of a transaction over various applications / components'
+  AtradiusConcurrencyControlVersionHeader:
+    name: Atradius-Concurrency-Control-Version
+    in: header
+    required: false
+    type: string
+    description: 'A placeholder were we can store a string with relevant information to perform in the data store the verification of the optimistic concurrency control. Block to capture the information which might be required as part of the Optimistic concurrency control (OCC) which is a concurrency control method applied to transactional systems.'
+paths:
+  /buyers/{buyer_id}/social-security-debts:
+    x-summary: Add / Get Social Security Debts
+    get:
+      tags:
+        - Generic
+      security:
+        - Bearer: []
+      description: 'This operation retrieves the Buyer Social Security Debts for the given buyer Id. <I>Only buyers from Belgium holds this information</I>'
+      summary: Get Buyer Social Security Debts
+      operationId: GetBuyerSocialSecurityDebts
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Param
+        - $ref: '#/parameters/EffectFromDateParam'
+        - $ref: '#/parameters/EffectToDateParam'
+        - $ref: '#/parameters/LanguageParam'
+        - $ref: '#/parameters/OffsetParam'
+        - $ref: '#/parameters/LimitParam'
+        - name: sort
+          in: query
+          required: false
+          type: array
+          items:
+            type: string
+            enum: ['effect_from_date:a', 'effect_from_date:d', 'effect_to_date:a', 'effect_to_date:d', 'create_date:a', 'create_date:d', 'last_update_date:a', 'last_update_date:d', 'create_uid:a' ,'create_uid:d', 'last_update_uid:a', 'last_update_uid:d']
+          description: 'Array of fields to sort on.'
+          default: ['last_update_date:d']
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer social security debts'
+          schema:
+            $ref: '#/definitions/SocialSecurityDebtsPaginated'
+
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+    post:
+      tags:
+        - Generic
+      security:
+        - Bearer: []
+      description: 'This operation adds an additional social security debt record for a given organisation identifier.<I>Only buyers from Belgium holds this information.</I>'
+      summary: Add Buyer Social Security Debt
+      operationId: AddBuyerSocialSecurityDebt
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/SocialSecurityDebts'
+      responses:
+        '201':
+          description: 'Social security debt added for the buyer successfully'
+          schema:
+            $ref: '#/definitions/SocialSecurityDebts'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+  /buyers/{buyer_id}/social-security-debts/{social_security_id}:
+    x-summary: Delete/ Update Social Security Debt
+    put:
+      tags:
+        - Generic
+      security:
+        - Bearer: []
+      description: 'This operation update a Social Security Debt for the given social security id and the given buyer.<I>Only buyers from Belgium holds this information.</I>'
+      summary: Update buyer Social Security Debt
+      operationId: UpdateBuyerSocialSecurityDebt
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/SocialSecurityIdPath'
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+        # Body
+        - name: body
+          in: body
+          required: true
+          description: ''
+          schema:
+            $ref: '#/definitions/SocialSecurityDebts'
+      responses:
+        '201':
+          description: 'Updated Social security debt associated with buyer Successfully'
+          schema:
+            $ref: '#/definitions/SocialSecurityDebts'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+    delete:
+      tags:
+        - Generic
+      security:
+        - Bearer: []
+      description: 'This operation delete a Social Security Debt for the given Social Security Debt id and the given buyer.<I>Only buyers from Belgium holds this information.</I>'
+      summary: Delete Buyer Social Security Debt
+      operationId: DeleteBuyerSocialSecurityDebt
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+        - $ref: '#/parameters/SocialSecurityIdPath'
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '204':
+          description: 'Social security debts associated with buyer deleted successfully'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+  /buyers/{buyer_id}/social-security-debts/debts-flag:
+    x-summary: Get Social Security Debts flag
+    get:
+      tags:
+        - Generic
+      security:
+        - Bearer: []
+      description: 'This operation calculates and return a flag when a new social security debt registered for buyers in the system. <I>Only buyers from Belgium holds this information.</I>'
+      summary: Get Buyer Social Security Debts Flag
+      operationId: GetBuyerSocialSecurityDebtsFlag
+      parameters:
+        # Path
+        - $ref: '#/parameters/BuyerIdPath'
+
+        # Headers
+        - $ref: '#/parameters/AtradiusApiKey'
+        - $ref: '#/parameters/AtradiusOriginUserIdHeader'
+        - $ref: '#/parameters/AtradiusOriginApplicationHeader'
+        - $ref: '#/parameters/AtradiusOriginServiceHeader'
+        - $ref: '#/parameters/AtradiusInvocationServiceHeader'
+        - $ref: '#/parameters/AtradiusMessageTimestampHeader'
+        - $ref: '#/parameters/AtradiusMessageIdHeader'
+        - $ref: '#/parameters/AtradiusCorrelationIdHeader'
+        - $ref: '#/parameters/AtradiusConcurrencyControlVersionHeader'
+      responses:
+        '200':
+          description: 'Successful retrieval of the buyer social security debts flag'
+          schema:
+            $ref: '#/definitions/SocialSecurityDebtsFlag'
+          headers: {}
+        '400':
+          description: 'Request fialed due to validation error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '403':
+          description: 'Not authorised.'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+        '500':
+          description: 'Error'
+          schema:
+            $ref: '#/definitions/ErrorObject'
+          headers: {}
+
+definitions:
+  # Common schemas
+  ErrorObject:
+    title: ErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'ERROR'
+      type:
+        description: 'Type of Exception or error or warning. Can be generic exceptions or even custom defined exceptions specific to the API'
+        type: string
+        example: 'NullPointerException'
+      code:
+        description: Specific error/warning code for a particular error, very specific to the API/application. The old faultcode.
+        type: string
+        example: 'BU_DS_0001'
+      message:
+        description: 'A descriptive error message for the consumer. The old faultstring.'
+        type: string
+        example: 'The operation over the buyer 1234 failed due to an internal error'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'BuyerBAS.UpdateBuyerManualUnderwritingSettings'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+      inner_errors:
+        description: 'An array of internal errors which might provide the stack trace of all the internal errors codes being returned by all the inner systems, hence leading to this parent error..'
+        type: array
+        items:
+          $ref: '#/definitions/InnerErrorObject'
+
+    required:
+      - severity
+      - type
+      - code
+      - message
+  ErrorObjectPairValueKey:
+    title: ErrorObjectPairValueKey
+    type: object
+    properties:
+      key:
+        description: 'Key / identifier'
+        type: string
+        example: 'allocation_rules_id'
+      value:
+        description: 'Value'
+        type: string
+        example: '1234'
+
+  InnerErrorObject:
+    title: InnerErrorObject
+    type: object
+    properties:
+      severity:
+        description: 'This is used to define how severe the error is and how big impact it has.'
+        type: string
+        enum: ['CRITICAL', 'ERROR', 'WARNING', 'INFO']
+        example: 'CRITICAL'
+      code:
+        description: 'Specific error/warning code for a particular error, very specific to the API/application. The old faultcode'
+        type: string
+        example: 'AMA-0001'
+      message:
+        description: 'A descriptive error message for the consumer'
+        type: string
+        example: 'Got connection time out from information gateway'
+      source:
+        description: 'The name of origin (parent) service which is invoked.'
+        type: string
+        example: 'IGS0001-INFORMATION-GATEWAY'
+      target:
+        description: 'Key/value pair indicating which input property could have caused the error.'
+        type: array
+        items:
+          $ref: '#/definitions/ErrorObjectPairValueKey'
+  AuditFields:
+    title: AuditFields
+    type: object
+    properties:
+      create_date:
+        description: 'Creation date. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      create_uid:
+        description: 'User who created the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      last_update_date:
+        description: 'Date when the record was updated. ISO8601 format [YYYY-MM-DDTHH:mi:ssZ]'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      last_update_uid:
+        description: 'User who updated the record'
+        type: string
+        example: 'nldmer1'
+        readOnly: true
+      effect_from_date:
+        description: 'Date when the record started being effective'
+        type: string
+        format: date-time
+        example: '2021-01-02T22:22:22Z'
+        readOnly: true
+      effect_to_date:
+        description: 'Date when the record stopped being effective'
+        type: string
+        format: date-time
+        example: '2221-01-02T22:22:22Z'
+        readOnly: true
+
+  Pagination:
+    title: Pagination
+    description: Used for the paginated operations
+    type: object
+    properties:
+      total_results:
+        type: integer
+        format: int32
+        example: 72
+      count:
+        type: integer
+        example: 50
+        format: int32
+      has_more:
+        type: boolean
+        example: true
+      limit:
+        type: integer
+        format: int32
+        example: 50
+      offset:
+        type: integer
+        format: int32
+        example: 0
+  SocialSecurityDebtsPaginated:
+    title: SocialSecurityDebtsPaginated
+    description: List of buyer social security debts
+    type: object
+    allOf:
+      - type: object
+        properties:
+          response:
+            type: array
+            items:
+              $ref: '#/definitions/SocialSecurityDebts'
+      - $ref: '#/definitions/Pagination'
+  SocialSecurityDebts:
+    title: SocialSecurityDebts
+    type: object
+    allOf:
+      - type: object
+        properties:
+          social_security_id:
+            type: integer
+            format: int64
+            description: 'Key itentifier of record'
+            example: 234567899
+            readOnly: true
+          trimester:
+            type: integer
+            format: int32
+            description: 'Shows the quarter of which the payment delay relates to (quarter [1,2,3 or 4] + year in 2 digits), so 2nd quarter 2021 would be 221'
+            example: 221
+          amount_overdue:
+            type: number
+            format: double
+            example: 2500.45
+            description: 'Amount overdue'
+          dispute_flag:
+            type: string
+            enum: ['Y','N']
+            description: 'Indicates if there is a dispute.'
+            default: 'N'
+          free_txt:
+            type: string
+            description: 'Free Text/description associated to the social security debt record'
+            example: 'In an uncertain place in La Mancha where lives an uncertain knight of an uncertain name who leaves his uncertain village for a geography'
+      - $ref: '#/definitions/AuditFields'
+  SocialSecurityDebtsFlag:
+    title: SocialSecurityDebtsFlag
+    type: object
+    properties:
+      is_new_social_security_debts:
+        type: string
+        enum: ['Y','N']
+        example: 'Y'
+        description: 'This is flag reports- a new social security debt is registered for the buyer'
+tags:
+  - name: Generic
+    description: Buyer Social Security Debts CRUD operations over the Buyer CBOu
